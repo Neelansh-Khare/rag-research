@@ -1,0 +1,16 @@
+[project]
+name = "rag-saturation-paper"
+version = "0.1.0"
+description = "Study retrieval saturation at scale in RAG systems."
+requires-python = ">=3.10"
+readme = "README.md"
+license = { text = "MIT" }
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[build-system]
+requires = ["setuptools>=68.0.0"]
+build-backend = "setuptools.build_meta"
+

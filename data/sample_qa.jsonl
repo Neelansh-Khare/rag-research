@@ -1,0 +1,21 @@
+{"doc_id":"doc_001","document":"Topic: France. Sentence: The capital of France is Paris. Answer: Paris","query":"What is the capital of France?","answer":"Paris","relevant_doc_ids":["doc_001"]}
+{"doc_id":"doc_002","document":"Topic: Germany. Sentence: The capital of Germany is Berlin. Answer: Berlin","query":"What is the capital of Germany?","answer":"Berlin","relevant_doc_ids":["doc_002"]}
+{"doc_id":"doc_003","document":"Topic: Italy. Sentence: The capital of Italy is Rome. Answer: Rome","query":"What is the capital of Italy?","answer":"Rome","relevant_doc_ids":["doc_003"]}
+{"doc_id":"doc_004","document":"Topic: Spain. Sentence: The capital of Spain is Madrid. Answer: Madrid","query":"What is the capital of Spain?","answer":"Madrid","relevant_doc_ids":["doc_004"]}
+{"doc_id":"doc_005","document":"Topic: Japan. Sentence: The capital of Japan is Tokyo. Answer: Tokyo","query":"What is the capital of Japan?","answer":"Tokyo","relevant_doc_ids":["doc_005"]}
+{"doc_id":"doc_006","document":"Topic: Python. Sentence: Python is a programming language. Answer: Python","query":"What is Python?","answer":"Python","relevant_doc_ids":["doc_006"]}
+{"doc_id":"doc_007","document":"Topic: Water. Sentence: Water is composed of H and O. Answer: H2O","query":"What is water commonly called as a chemical formula?","answer":"H2O","relevant_doc_ids":["doc_007"]}
+{"doc_id":"doc_008","document":"Topic: Earth. Sentence: Earth is the third planet from the Sun. Answer: third","query":"Which planet is Earth from the Sun?","answer":"third","relevant_doc_ids":["doc_008"]}
+{"doc_id":"doc_009","document":"Topic: Gravity. Sentence: Gravity is the force that attracts masses. Answer: force","query":"What does gravity do?","answer":"force","relevant_doc_ids":["doc_009"]}
+{"doc_id":"doc_010","document":"Topic: Photosynthesis. Sentence: Photosynthesis converts light into energy. Answer: energy","query":"What does photosynthesis convert light into?","answer":"energy","relevant_doc_ids":["doc_010"]}
+{"doc_id":"doc_011","document":"Topic: AI. Sentence: AI stands for artificial intelligence. Answer: artificial intelligence","query":"What does AI stand for?","answer":"artificial intelligence","relevant_doc_ids":["doc_011"]}
+{"doc_id":"doc_012","document":"Topic: ML. Sentence: Machine learning is a field of AI. Answer: AI","query":"Machine learning is a field of what?","answer":"AI","relevant_doc_ids":["doc_012"]}
+{"doc_id":"doc_013","document":"Topic: SQL. Sentence: SQL is used to query relational databases. Answer: query","query":"What is SQL used for?","answer":"query","relevant_doc_ids":["doc_013"]}
+{"doc_id":"doc_014","document":"Topic: The Moon. Sentence: The Moon orbits the Earth. Answer: Earth","query":"What does the Moon orbit?","answer":"Earth","relevant_doc_ids":["doc_014"]}
+{"doc_id":"doc_015","document":"Topic: The Sun. Sentence: The Sun is a star at the center of our solar system. Answer: star","query":"What is the Sun?","answer":"star","relevant_doc_ids":["doc_015"]}
+{"doc_id":"doc_016","document":"Topic: Oceans. Sentence: The Pacific Ocean is the largest ocean on Earth. Answer: largest","query":"Which ocean is the largest on Earth?","answer":"largest","relevant_doc_ids":["doc_016"]}
+{"doc_id":"doc_017","document":"Topic: HTML. Sentence: HTML is used to structure web content. Answer: structure","query":"HTML is used to do what for web content?","answer":"structure","relevant_doc_ids":["doc_017"]}
+{"doc_id":"doc_018","document":"Topic: CSS. Sentence: CSS is used to style web pages. Answer: style","query":"CSS is used to do what?","answer":"style","relevant_doc_ids":["doc_018"]}
+{"doc_id":"doc_019","document":"Topic: JavaScript. Sentence: JavaScript is primarily used for interactive web pages. Answer: interactive","query":"JavaScript is primarily used for what kind of web pages?","answer":"interactive","relevant_doc_ids":["doc_019"]}
+{"doc_id":"doc_020","document":"Topic: RAG. Sentence: RAG stands for retrieval-augmented generation. Answer: retrieval-augmented generation","query":"What does RAG stand for?","answer":"retrieval-augmented generation","relevant_doc_ids":["doc_020"]}
+

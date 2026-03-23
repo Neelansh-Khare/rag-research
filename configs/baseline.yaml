@@ -1,0 +1,55 @@
+run_name: baseline
+seed: 123
+
+# Data
+data:
+  qa_path: data/sample_qa.jsonl
+  corpus_path: data/sample_qa.jsonl
+  corpus_text_field: document
+  qa_query_field: query
+  qa_answer_field: answer
+  qa_relevant_doc_ids_field: relevant_doc_ids
+
+# Retrieval
+retrieval:
+  embedding_model: sentence-transformers/all-MiniLM-L6-v2
+  top_k: 5
+  chunking:
+    chunk_size_words: 80
+    chunk_overlap_words: 10
+
+  # FAISS settings
+  faiss:
+    index_type: IndexFlatIP
+
+# Generation
+generation:
+  generator_type: mock
+  prompt_template: |
+    You are a helpful assistant. Use the provided context to answer the question.
+    If the answer is not in the context, say "I don't know".
+
+    Context:
+    {context}
+
+    Question:
+    {question}
+
+    Answer:
+
+  # OpenAI-compatible generator settings (used only if generator_type=openai_compatible)
+  openai_compatible:
+    model_env: OPENAI_MODEL
+    api_base_env: OPENAI_API_BASE
+    api_key_env: OPENAI_API_KEY
+    default_model: gpt-4o-mini
+
+  # Generation limits for OpenAI-compatible APIs
+  max_tokens: 64
+  temperature: 0.0
+
+# Run controls
+run:
+  subset_size: 20
+  output_dir: outputs/baseline
+

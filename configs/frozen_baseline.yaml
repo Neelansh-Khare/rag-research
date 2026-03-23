@@ -1,0 +1,54 @@
+# Frozen configuration for reproducibility.
+#
+# Notes:
+# - `run_pipeline.py` provides `--mode sanity` (20 queries) and `--mode baseline` (200 queries).
+# - This file sets seed + retrieval/generation hyperparameters.
+
+run_name: frozen_baseline
+seed: 42
+
+data:
+  qa_path: data/sample_qa.jsonl
+  corpus_path: data/sample_qa.jsonl
+  corpus_text_field: document
+  qa_query_field: query
+  qa_answer_field: answer
+  qa_relevant_doc_ids_field: relevant_doc_ids
+
+retrieval:
+  embedding_model: sentence-transformers/all-MiniLM-L6-v2
+  top_k: 5
+  chunking:
+    chunk_size_words: 80
+    chunk_overlap_words: 10
+  faiss:
+    index_type: IndexFlatIP
+
+generation:
+  generator_type: mock
+  prompt_template: |
+    You are a helpful assistant. Use the provided context to answer the question.
+    If the answer is not in the context, say "I don't know".
+
+    Context:
+    {context}
+
+    Question:
+    {question}
+
+    Answer:
+
+  openai_compatible:
+    model_env: OPENAI_MODEL
+    api_base_env: OPENAI_API_BASE
+    api_key_env: OPENAI_API_KEY
+    default_model: gpt-4o-mini
+
+  max_tokens: 64
+  temperature: 0.0
+
+run:
+  # pipeline will override subset_size based on mode; these are just defaults
+  subset_size: 200
+  output_dir: outputs/baseline
+
