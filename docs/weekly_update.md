@@ -24,3 +24,29 @@ Next week plan:
 - Add scaled-corpus configs and run-sweep scaffolding (1k/10k/100k), plus basic rank-stability diagnostics integration.
 - Start the first corpus-size comparison experiment and populate `docs/results_summary.md` with recorded metrics.
 
+## Week 2
+
+Date: 2026-03-30
+
+Progress:
+
+- Implemented `QueryPhrasingShiftGenerator` to create query variations for RAG stability testing.
+- Added `PARAPHRASE_PROMPT` for LLM-based query variation generation.
+- Created unit tests for the phrasing generator and verified with a small-scale validation script.
+- Scaffolding for rank-stability diagnostics (`jaccard_at_k`, `entropy_tracking`) is ready for integration.
+
+Highlights:
+
+- Verified `QueryPhrasingShiftGenerator` functionality on `sample_qa.jsonl` with successful variation generation.
+- Established a baseline for testing retrieval stability across paraphrased queries.
+
+Risks / blockers:
+
+- Cost and latency of LLM-based paraphrasing for large-scale sweeps (considering caching or offline generation).
+
+Next week plan:
+
+- Integrate phrasing shifts directly into the `run_pipeline.py` execution loop.
+- Execute the full scale-sweep (1k, 10k, 100k) and analyze retrieval stability metrics.
+- Update `docs/results_summary.md` with the first set of saturation results.
+

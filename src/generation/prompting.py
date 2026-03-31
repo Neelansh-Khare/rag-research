@@ -26,3 +26,12 @@ def build_prompt(
     context = build_context(retrieved, max_passages=max_passages)
     return prompt_template.format(context=context, question=question)
 
+
+PARAPHRASE_PROMPT = """You are an expert at paraphrasing questions while preserving their original meaning and intent.
+Generate {n_shifts} different variations of the following question.
+Each variation should be on a new line. Do not add any extra text or numbering.
+
+Question: {question}
+
+Variations:"""
+
