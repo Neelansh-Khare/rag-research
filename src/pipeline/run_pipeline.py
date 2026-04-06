@@ -28,6 +28,8 @@ from src.eval.retrieval_metrics import (
     aggregate_metrics,
     compute_retrieval_metrics_for_example,
 )
+from src.eval.stability import jaccard_at_k
+from src.generation.phrasing import QueryPhrasingShiftGenerator
 
 
 def set_global_seed(seed: int) -> None:
@@ -63,6 +65,7 @@ def evaluate_from_predictions_jsonl(
     ems: List[float] = []
     f1s: List[float] = []
     retrieval_items: List[Dict[str, float]] = []
+    stability_items: List[Dict[str, float]] = []
 
     for ex in preds:
         pred_text = str(ex.get("prediction", ""))
@@ -82,16 +85,21 @@ def evaluate_from_predictions_jsonl(
             )
         )
 
+        if "stability" in ex:
+            stability_items.append(ex["stability"])
+
     retrieval_agg = aggregate_metrics(retrieval_items)
     qa_agg = {
         "exact_match": float(sum(ems) / max(1, len(ems))),
         "token_f1": float(sum(f1s) / max(1, len(f1s))),
     }
+    stability_agg = aggregate_metrics(stability_items)
 
     # Merge aggregated metric dicts.
     all_metrics: Dict[str, Any] = {
         "qa": qa_agg,
         "retrieval": retrieval_agg,
+        "stability": stability_agg,
         "n_examples": len(preds),
     }
     return all_metrics
@@ -111,8 +119,10 @@ def save_metrics(
     summary_row: Dict[str, Any] = {"run_id": run_meta.get("run_id"), **run_meta}
     qa = metrics.get("qa", {})
     retrieval = metrics.get("retrieval", {})
+    stability = metrics.get("stability", {})
     summary_row.update({f"qa.{k}": v for k, v in qa.items()})
     summary_row.update({f"retrieval.{k}": v for k, v in retrieval.items()})
+    summary_row.update({f"stability.{k}": v for k, v in stability.items()})
     summary_row["n_examples"] = metrics.get("n_examples", 0)
 
     # Per-run summary (for easy debugging).
@@ -123,7 +133,8 @@ def save_metrics(
     global_summary_path = output_dir.parent / "metrics_summary.csv"
     if global_summary_path.exists():
         prev = pd.read_csv(global_summary_path)
-        next_df = pd.concat([prev, pd.DataFrame([summary_row])], ignore_index=True)
+        # Ensure we handle potentially different columns.
+        next_df = pd.concat([prev, pd.DataFrame([summary_row])], ignore_index=True, sort=False)
         next_df.to_csv(global_summary_path, index=False)
     else:
         pd.DataFrame([summary_row]).to_csv(global_summary_path, index=False)
@@ -231,6 +242,82 @@ def run_generation(
                 ],
             }
         )
+    return predictions
+
+
+def run_generation_with_stability(
+    *,
+    examples: List[Dict[str, Any]],
+    embedder: SentenceTransformerEmbedder,
+    index: FaissPassageIndex,
+    generator: Any,
+    phrasing_gen: QueryPhrasingShiftGenerator,
+    prompt_template: str,
+    top_k: int,
+    max_passages_in_prompt: Optional[int] = None,
+) -> List[Dict[str, Any]]:
+    """Run retrieval + generation with query shifts for stability analysis."""
+    predictions: List[Dict[str, Any]] = []
+
+    for ex in tqdm(examples, desc="Retrieval+generation (stability)"):
+        query = str(ex["query"])
+        shifts = phrasing_gen.generate_shifts(query)
+
+        example_results: Dict[str, Any] = {
+            "example_id": ex["example_id"],
+            "query": query,
+            "gold_answer": ex["answer"],
+            "relevant_doc_ids": ex.get("relevant_doc_ids", []),
+            "shifts": [],
+        }
+
+        shift_rankings: List[List[str]] = []
+
+        for i, s_query in enumerate(shifts):
+            retrieved = retrieve_top_k(
+                query=s_query,
+                embedder=embedder,
+                index=index,
+                top_k=top_k,
+            )
+
+            prompt = build_prompt(
+                question=s_query,
+                retrieved=retrieved,
+                prompt_template=prompt_template,
+                max_passages=max_passages_in_prompt,
+            )
+            pred_text = generator.generate(prompt=prompt)
+
+            retrieved_doc_ids = [r.doc_id for r in retrieved]
+            retrieved_scores = [r.score for r in retrieved]
+            shift_rankings.append(retrieved_doc_ids)
+
+            shift_data = {
+                "query": s_query,
+                "prediction": pred_text,
+                "retrieved_doc_ids": retrieved_doc_ids,
+                "retrieved_scores": retrieved_scores,
+            }
+            example_results["shifts"].append(shift_data)
+
+            if i == 0:
+                # Store primary results at top level for compatibility.
+                example_results.update(shift_data)
+
+        # Compute Jaccard@k between original (shifts[0]) and all other shifts.
+        jaccards = []
+        if len(shift_rankings) > 1:
+            base_ranking = shift_rankings[0]
+            for other_ranking in shift_rankings[1:]:
+                jaccards.append(jaccard_at_k(base_ranking, other_ranking, k=top_k))
+
+        example_results["stability"] = {
+            "jaccard_at_k": float(np.mean(jaccards)) if jaccards else 1.0,
+            "n_shifts": len(shifts),
+        }
+        predictions.append(example_results)
+
     return predictions
 
 
@@ -358,14 +445,33 @@ def main() -> None:
         for q in qa_pairs
     ]
 
-    predictions = run_generation(
-        examples=examples,
-        embedder=embedder,
-        index=index,
-        generator=generator,
-        prompt_template=prompt_template,
-        top_k=top_k,
-    )
+    stability_cfg = config.get("stability", {})
+    n_shifts = int(stability_cfg.get("n_shifts", 0))
+
+    if n_shifts > 0:
+        log.info("Running with stability shifts (n_shifts=%d)", n_shifts)
+        phrasing_gen = QueryPhrasingShiftGenerator(
+            generator=generator,
+            n_shifts=n_shifts,
+        )
+        predictions = run_generation_with_stability(
+            examples=examples,
+            embedder=embedder,
+            index=index,
+            generator=generator,
+            phrasing_gen=phrasing_gen,
+            prompt_template=prompt_template,
+            top_k=top_k,
+        )
+    else:
+        predictions = run_generation(
+            examples=examples,
+            embedder=embedder,
+            index=index,
+            generator=generator,
+            prompt_template=prompt_template,
+            top_k=top_k,
+        )
 
     predictions_path = run_dir / "predictions.jsonl"
     with predictions_path.open("w", encoding="utf-8") as f:

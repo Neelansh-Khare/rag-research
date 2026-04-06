@@ -39,3 +39,6 @@ run:
   subset_size: 20
   output_dir: outputs
 
+stability:
+  n_shifts: 3
+

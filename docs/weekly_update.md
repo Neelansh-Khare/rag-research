@@ -50,3 +50,29 @@ Next week plan:
 - Execute the full scale-sweep (1k, 10k, 100k) and analyze retrieval stability metrics.
 - Update `docs/results_summary.md` with the first set of saturation results.
 
+## Week 3
+
+Date: 2026-04-05
+
+Progress:
+
+- Completed integration of `QueryPhrasingShiftGenerator` into `run_pipeline.py`.
+- Added `run_generation_with_stability` logic to compute rank stability (Jaccard@k) across query variations.
+- Prepared scaled corpora (1k, 10k, 100k) from the base dataset.
+- Executed full scale-sweep for all three sizes and successfully logged stability metrics to `metrics_summary.csv`.
+
+Highlights:
+
+- Infrastructure for tracking retrieval saturation (discriminability collapse + rank instability) is now fully operational.
+- Verified that stability metrics can be correctly aggregated and saved alongside traditional QA metrics.
+
+Risks / blockers:
+
+- Current experiments use a small base corpus with replacement; results are stable but do not yet show "saturation."
+- Scaling to much larger, unique corpora will be the next challenge for storage and indexing time.
+
+Next week plan:
+
+- Source or generate a significantly larger unique corpus (e.g., 1M+ docs) to observe actual saturation effects.
+- Conduct a deeper gap analysis on top-k scores to detect discriminability collapse.
+

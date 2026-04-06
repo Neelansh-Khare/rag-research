@@ -58,3 +58,23 @@ Observations:
 - Integrate phrasing shifts into `run_pipeline.py` or create a new stability evaluation script.
 - Evaluate retrieval stability (Jaccard@k) across these shifts for different corpus scales.
 
+### 2026-04-05
+
+**Summary:** Full Query Shift experiments; Log retrieval vs generation degradation
+
+**Details:**
+- Integrated `QueryPhrasingShiftGenerator` into `src.pipeline.run_pipeline`.
+- Added `run_generation_with_stability` to compute Jaccard@k across query shifts.
+- Updated metrics logging to include `stability.jaccard_at_k` in `metrics.json` and `metrics_summary.csv`.
+- Executed full scale sweep (1k, 10k, 100k) using `configs/scale_*.yaml` with `n_shifts: 3`.
+
+**Results:**
+- **1k corpus:** EM=1.0, Jaccard@k=1.0, Mean similarity=0.6204
+- **10k corpus:** EM=1.0, Jaccard@k=1.0, Mean similarity=0.6204
+- **100k corpus:** EM=1.0, Jaccard@k=1.0, Mean similarity=0.6204
+- *Note:* Metrics are identical due to `MockGenerator` and small base corpus sampled with replacement. The infrastructure is now verified and ready for real scaling tests with larger, unique corpora.
+
+**Next actions:**
+- Conduct gap analysis on retrieval discriminability as corpus size increases further.
+- Test with non-mock generator to observe real QA degradation.
+

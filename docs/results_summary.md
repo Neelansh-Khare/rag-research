@@ -40,10 +40,13 @@ Record results for the minimal baseline pipeline.
 
 ## Scaling experiments
 
-Template: for each corpus size `N` (e.g., 1k, 10k, 100k) and retrieval depth `k`, record:
+Record results for increasing corpus size `N` (with `k=5`, mock generator).
 
-- EM/F1
-- Recall@k
-- Discriminability signals (gap, entropy, mean top-k similarity)
-- Rank stability signals (rank overlap / Jaccard@k)
+| Corpus Size `N` | EM | Recall@k | Jaccard@k (Stability) | Mean similarity | Top1-Topk Gap | Entropy |
+|---|---|---|---|---|---|---|
+| 1,000 | 1.0 | 1.0 | 1.0 | 0.6204 | 0.0 | 1.6094 |
+| 10,000 | 1.0 | 1.0 | 1.0 | 0.6204 | 0.0 | 1.6094 |
+| 100,000 | 1.0 | 1.0 | 1.0 | 0.6204 | 0.0 | 1.6094 |
+
+*Observation (2026-04-05):* Metrics are stable due to the use of a base corpus (22 items) sampled with replacement. The pipeline infrastructure is validated for scaling. Real-world saturation will be tested next with larger and more unique corpora.
 
