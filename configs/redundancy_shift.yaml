@@ -1,0 +1,45 @@
+run_name: redundancy_shift
+seed: 42
+
+data:
+  qa_path: data/sample_qa.jsonl
+  corpus_path: data/scaled_corpora/corpus_1000.jsonl
+  corpus_text_field: document
+  qa_query_field: query
+  qa_answer_field: answer
+  qa_relevant_doc_ids_field: relevant_doc_ids
+
+retrieval:
+  embedding_model: sentence-transformers/all-MiniLM-L6-v2
+  top_k: 5
+  chunking:
+    chunk_size_words: 80
+    chunk_overlap_words: 10
+  faiss:
+    index_type: IndexFlatIP
+
+generation:
+  generator_type: mock
+  prompt_template: |
+    You are a helpful assistant. Use the provided context to answer the question.
+    If the answer is not in the context, say "I don't know".
+
+    Context:
+    {context}
+
+    Question:
+    {question}
+
+    Answer:
+
+  max_tokens: 64
+  temperature: 0.0
+
+run:
+  subset_size: 20
+  output_dir: outputs/redundancy_shift
+
+stability:
+  type: corpus_redundancy
+  n_shifts: 3
+  redundancy_factor: 2

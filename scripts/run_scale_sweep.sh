@@ -6,6 +6,8 @@ REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 if [ -x "$REPO_DIR/.venv/bin/python" ]; then
   PYTHON="$REPO_DIR/.venv/bin/python"
+elif [ -x "$REPO_DIR/.venv/Scripts/python.exe" ]; then
+  PYTHON="$REPO_DIR/.venv/Scripts/python.exe"
 else
   PYTHON="python"
 fi

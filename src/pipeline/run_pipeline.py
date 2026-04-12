@@ -30,6 +30,7 @@ from src.eval.retrieval_metrics import (
 )
 from src.eval.stability import jaccard_at_k
 from src.generation.phrasing import QueryPhrasingShiftGenerator
+from src.data.redundancy import CorpusRedundancyShiftGenerator
 
 
 def set_global_seed(seed: int) -> None:
@@ -149,12 +150,14 @@ def build_passage_index(
     index_type: str,
     device: Optional[str] = None,
     top_k: int = 5,
+    embedder: Optional[SentenceTransformerEmbedder] = None,
 ) -> tuple[SentenceTransformerEmbedder, FaissPassageIndex]:
     del top_k  # top_k is retrieval-time only
 
-    embedder = SentenceTransformerEmbedder(
-        EmbedderConfig(model_name=embedding_model, device=device, normalize=True)
-    )
+    if embedder is None:
+        embedder = SentenceTransformerEmbedder(
+            EmbedderConfig(model_name=embedding_model, device=device, normalize=True)
+        )
 
     # Chunk corpus into fixed-size passages.
     metas: List[PassageMeta] = []
@@ -321,6 +324,107 @@ def run_generation_with_stability(
     return predictions
 
 
+def run_generation_with_corpus_stability(
+    *,
+    examples: List[Dict[str, Any]],
+    embedder: SentenceTransformerEmbedder,
+    corpus_docs: List[Any],
+    chunk_cfg: Dict[str, Any],
+    index_type: str,
+    generator: Any,
+    stability_cfg: Dict[str, Any],
+    prompt_template: str,
+    top_k: int,
+    n_shifts: int,
+    max_passages_in_prompt: Optional[int] = None,
+) -> List[Dict[str, Any]]:
+    """Run retrieval + generation with corpus redundancy shifts for stability analysis."""
+    predictions: List[Dict[str, Any]] = []
+
+    redundancy_factor = int(stability_cfg.get("redundancy_factor", 2))
+    
+    # Build shifted indices.
+    indices: List[FaissPassageIndex] = []
+    for i in range(n_shifts):
+        # Shift 0: 1x, Shift 1: R, Shift 2: R^2, ...
+        factor = redundancy_factor ** i
+        print(f"Building redundant index {i} (factor={factor}x)...")
+        
+        # Use existing CorpusDoc objects from loaders.py
+        gen = CorpusRedundancyShiftGenerator(redundancy_factor=factor, seed=42 + i)
+        shifted_docs = gen.apply(corpus_docs)
+        
+        _, shift_index = build_passage_index(
+            corpus_docs=[{"doc_id": d.doc_id, "text": d.text} for d in shifted_docs],
+            embedding_model="", # Not used if embedder is provided
+            chunk_size_words=int(chunk_cfg.get("chunk_size_words", 80)),
+            chunk_overlap_words=int(chunk_cfg.get("chunk_overlap_words", 10)),
+            index_type=index_type,
+            embedder=embedder,
+        )
+        indices.append(shift_index)
+
+    for ex in tqdm(examples, desc="Retrieval+generation (corpus stability)"):
+        query = str(ex["query"])
+        
+        example_results: Dict[str, Any] = {
+            "example_id": ex["example_id"],
+            "query": query,
+            "gold_answer": ex["answer"],
+            "relevant_doc_ids": ex.get("relevant_doc_ids", []),
+            "shifts": [],
+        }
+
+        shift_rankings: List[List[str]] = []
+
+        for i, index in enumerate(indices):
+            retrieved = retrieve_top_k(
+                query=query,
+                embedder=embedder,
+                index=index,
+                top_k=top_k,
+            )
+
+            prompt = build_prompt(
+                question=query,
+                retrieved=retrieved,
+                prompt_template=prompt_template,
+                max_passages=max_passages_in_prompt,
+            )
+            pred_text = generator.generate(prompt=prompt)
+
+            retrieved_doc_ids = [r.doc_id for r in retrieved]
+            retrieved_scores = [r.score for r in retrieved]
+            shift_rankings.append(retrieved_doc_ids)
+
+            shift_data = {
+                "query": query,
+                "prediction": pred_text,
+                "retrieved_doc_ids": retrieved_doc_ids,
+                "retrieved_scores": retrieved_scores,
+                "redundancy_factor": redundancy_factor ** i,
+            }
+            example_results["shifts"].append(shift_data)
+
+            if i == 0:
+                example_results.update(shift_data)
+
+        # Compute Jaccard@k between original (shift 0) and all other shifts.
+        jaccards = []
+        if len(shift_rankings) > 1:
+            base_ranking = shift_rankings[0]
+            for other_ranking in shift_rankings[1:]:
+                jaccards.append(jaccard_at_k(base_ranking, other_ranking, k=top_k))
+
+        example_results["stability"] = {
+            "jaccard_at_k": float(np.mean(jaccards)) if jaccards else 1.0,
+            "n_shifts": len(indices),
+        }
+        predictions.append(example_results)
+
+    return predictions
+
+
 def select_subset(
     qa_pairs: List[Any],
     subset_size: int,
@@ -447,22 +551,37 @@ def main() -> None:
 
     stability_cfg = config.get("stability", {})
     n_shifts = int(stability_cfg.get("n_shifts", 0))
+    stability_type = str(stability_cfg.get("type", "phrasing"))
 
     if n_shifts > 0:
-        log.info("Running with stability shifts (n_shifts=%d)", n_shifts)
-        phrasing_gen = QueryPhrasingShiftGenerator(
-            generator=generator,
-            n_shifts=n_shifts,
-        )
-        predictions = run_generation_with_stability(
-            examples=examples,
-            embedder=embedder,
-            index=index,
-            generator=generator,
-            phrasing_gen=phrasing_gen,
-            prompt_template=prompt_template,
-            top_k=top_k,
-        )
+        log.info("Running with stability shifts (type=%s, n_shifts=%d)", stability_type, n_shifts)
+        if stability_type == "corpus_redundancy":
+            predictions = run_generation_with_corpus_stability(
+                examples=examples,
+                embedder=embedder,
+                corpus_docs=corpus_docs,
+                chunk_cfg=chunk_cfg,
+                index_type=index_type,
+                generator=generator,
+                stability_cfg=stability_cfg,
+                prompt_template=prompt_template,
+                top_k=top_k,
+                n_shifts=n_shifts,
+            )
+        else:
+            phrasing_gen = QueryPhrasingShiftGenerator(
+                generator=generator,
+                n_shifts=n_shifts,
+            )
+            predictions = run_generation_with_stability(
+                examples=examples,
+                embedder=embedder,
+                index=index,
+                generator=generator,
+                phrasing_gen=phrasing_gen,
+                prompt_template=prompt_template,
+                top_k=top_k,
+            )
     else:
         predictions = run_generation(
             examples=examples,

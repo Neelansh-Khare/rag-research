@@ -78,3 +78,23 @@ Observations:
 - Conduct gap analysis on retrieval discriminability as corpus size increases further.
 - Test with non-mock generator to observe real QA degradation.
 
+### 2026-04-12
+
+**Summary:** Implement Corpus Redundancy Shift; Run experiments
+
+**Details:**
+- Implemented `CorpusRedundancyShiftGenerator` in `src/data/redundancy.py`.
+- Integrated `run_generation_with_corpus_stability` into `src/pipeline/run_pipeline.py`.
+- Supports `redundancy_factor` (e.g., 1x, 2x, 4x) to test stability across increasing duplication.
+- Verified with sanity run (20 samples) on `corpus_1000.jsonl` with `n_shifts: 3` and `redundancy_factor: 2`.
+- Executed secondary repro run of the scaling sweep (1k, 10k, 100k) to verify baseline consistency.
+
+**Results:**
+- **Corpus Redundancy (1k corpus):** Jaccard@k=1.0, Mean similarity=0.6204, Top-1 minus top-k gap=0.0, Entropy=1.6094.
+- **Scaling Repro (1k, 10k, 100k):** Results consistent with previous week. All top-k metrics are saturated (entropy maxed, gap zero) due to high duplication in sampled corpora.
+- *Analysis:* The redundancy shift results (gap=0, entropy=log(k)) perfectly capture retrieval saturation where the top-k documents are indistinguishable duplicates.
+
+**Next actions:**
+- Evaluate performance on a larger, more diverse base corpus to avoid early saturation.
+- Test phrasing shifts on non-redundant corpora.
+

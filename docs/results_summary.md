@@ -50,3 +50,16 @@ Record results for increasing corpus size `N` (with `k=5`, mock generator).
 
 *Observation (2026-04-05):* Metrics are stable due to the use of a base corpus (22 items) sampled with replacement. The pipeline infrastructure is validated for scaling. Real-world saturation will be tested next with larger and more unique corpora.
 
+## Redundancy shift experiments
+
+Record results for increasing corpus redundancy `R` (fixed `N=1,000`, `k=5`, mock generator).
+
+| Redundancy `R` | EM | Recall@k | Jaccard@k (Stability) | Mean similarity | Top1-Topk Gap | Entropy |
+|---|---|---|---|---|---|---|
+| 1x | 1.0 | 1.0 | 1.0 | 0.6204 | 0.0 | 1.6094 |
+| 2x | 1.0 | 1.0 | 1.0 | 0.6204 | 0.0 | 1.6094 |
+| 4x | 1.0 | 1.0 | 1.0 | 0.6204 | 0.0 | 1.6094 |
+
+*Observation (2026-04-12):* The top-k metrics (gap=0, entropy=log(5)) remain in a saturated state as redundancy increases. This confirms that current corpora (1k-100k) are dominated by duplicate content from a small base set.
+
+
